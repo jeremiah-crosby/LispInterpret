@@ -4,7 +4,7 @@ type Token =
     | LeftParenthesis
     | RightParenthesis
     | Symbol of string
-    | Number of System.Int64 option * float option
+    | Number of int option * float option
 
 let rec private lexChars (chars: char list): Token list =
     match chars with
@@ -18,7 +18,7 @@ and lexNumber (chars: char list, number: string) =
     match chars with
     | d :: rest when System.Char.IsDigit d || d = '.' -> lexNumber(rest, number + d.ToString())
     | rest -> try
-                let intNum = System.Int64.Parse(number)
+                let intNum = System.Int32.Parse(number)
                 Number (Some(intNum), None) :: lexChars rest
               with
               | :? System.Exception -> let floatNum = System.Double.Parse(number)
