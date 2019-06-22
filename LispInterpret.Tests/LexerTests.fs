@@ -4,8 +4,7 @@ open NUnit.Framework
 open Lexer
 open FsUnit
 
-[<TestClass>]
-type TestClass () =
+type LexerTests () =
 
     [<Test>]
     member this.``should lex empty string`` () =

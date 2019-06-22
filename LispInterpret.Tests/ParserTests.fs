@@ -6,7 +6,6 @@ open Syntax
 open Lexer
 open Parser
 
-[<TestClass>]
 type ParserTests () =
     
     [<Test>]
@@ -22,3 +21,11 @@ type ParserTests () =
     member this.``should parse (someFunc 5 6 7)`` () =
         let actual = parse [LeftParenthesis; Symbol "someFunc"; Number(Some(5), None); Number(Some(6), None); Number(Some(7), None); RightParenthesis]
         actual |> should equal [InvokeExpr("someFunc", [IntExpr(5); IntExpr(6); IntExpr(7)])]
+
+    [<Test>]
+    member this.``should parse an int`` () =
+        parse [Number(Some(500), None)] |> should equal [IntExpr(500)]
+
+    [<Test>]
+    member this.``should parse a float`` () =
+        parse [Number(None, Some(64.3))] |> should equal [FloatExpr(64.3)]
