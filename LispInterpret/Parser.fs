@@ -17,15 +17,18 @@ let rec private parseExpression (state: ParseState): ParseState =
     | RightParenthesis :: _-> error "unmatched )"
     | LeftParenthesis :: RightParenthesis :: rest -> {Expressions = state.Expressions @ [NilExpr]; Remaining = rest}
     | LeftParenthesis :: Symbol name :: arguments -> parseInvoke(name, { state with Remaining = arguments })
+    | Number(Some(intNum), None) :: rest -> {Expressions = state.Expressions @ [IntExpr(intNum)]; Remaining = rest}
+    | Number(None, Some(floatNum)) :: rest -> {Expressions = state.Expressions @ [FloatExpr(floatNum)]; Remaining = rest}
 and private parseInvoke (identifier: string, state: ParseState) =
     let argumentState = parseInvokeArguments({ state with Expressions = [] })
     match argumentState.Remaining with
-    | RightParenthesis :: rest -> {Expressions = state.Expressions @ [InvokeExpr(identifier, argumentState.Expressions)]; Remaining = argumentState.Remaining}
+    | RightParenthesis :: rest -> {Expressions = state.Expressions @ [InvokeExpr(identifier, argumentState.Expressions)]; Remaining = rest}
     | [] -> error "Incomplete function call"
     | _ -> error "Expected ), found something else"
 and private parseInvokeArguments (state: ParseState) =
     match state.Remaining with
     | RightParenthesis :: _ -> state
+    | [] -> state
     | _ -> state |> parseExpression |> parseInvokeArguments
 
 let rec private parseExpressions (state: ParseState): ParseState =
