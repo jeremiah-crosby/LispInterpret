@@ -8,7 +8,6 @@ type ArgumentExpr = {
 type Expression =
     | IntExpr of int
     | FloatExpr of float
-    | DefunExpr of name: string * arguments: ArgumentExpr list * body: Expression
-    | InvokeExpr of name: string * arguments: Expression list
+    | SymbolExpr of name: string
     | ErrorExpr of string
-    | NilExpr
+    | ListExpr of Expression list
