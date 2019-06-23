@@ -29,3 +29,19 @@ type ParserTests () =
     [<Test>]
     member this.``should parse a float`` () =
         parse [Number(None, Some(64.3))] |> should equal [FloatExpr(64.3)]
+
+    [<Test>]
+    member this.``should parse multiple expressions`` () =
+        let actual = parse [
+            LeftParenthesis;
+            Symbol "someFunc";
+            Number(Some(5), None);
+            Number(Some(6), None);
+            Number(Some(7), None);
+            RightParenthesis;
+            Number(Some(100), None);
+            Number(Some(200), None)]
+        actual |> should equal [
+            InvokeExpr("someFunc", [IntExpr(5); IntExpr(6); IntExpr(7)]);
+            IntExpr(100);
+            IntExpr(200)]
