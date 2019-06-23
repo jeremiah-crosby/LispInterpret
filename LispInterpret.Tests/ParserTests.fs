@@ -45,3 +45,15 @@ type ParserTests () =
             InvokeExpr("someFunc", [IntExpr(5); IntExpr(6); IntExpr(7)]);
             IntExpr(100);
             IntExpr(200)]
+
+    [<Test>]
+    member this.``should parse subexpressions in invoke`` () =
+        let actual = parse [
+            LeftParenthesis;
+            Symbol "someFunc";
+            LeftParenthesis;
+            Symbol "anotherFunc";
+            Number(Some(5), None);
+            RightParenthesis;
+            RightParenthesis;]
+        actual |> should equal [InvokeExpr("someFunc", [InvokeExpr("anotherFunc", [IntExpr(5)])])]
