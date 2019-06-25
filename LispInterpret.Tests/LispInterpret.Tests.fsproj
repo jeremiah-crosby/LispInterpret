@@ -17,6 +17,7 @@
     <Compile Include="LexerTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="InterpreterTests.fs" />
+    <Compile Include="OperatorAddTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

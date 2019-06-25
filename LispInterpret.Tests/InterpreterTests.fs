@@ -38,3 +38,10 @@ type InterpreterTests () =
             ListResult [IntResult 5; IntResult 1;];
             ListResult [IntResult 6]])
 
+    [<Test>]
+    member this.``parse error gives error result`` () =
+        let tokens = lex "(1 2"
+        let parsed = parse tokens
+        let result = parsed |> List.head |> evalExpression
+        result |> should equal (ErrorResult "Expected ')'")
+
