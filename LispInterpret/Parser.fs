@@ -22,6 +22,7 @@ let rec private parseExpression (state: ParseState): ParseState =
         | [] -> error "Expected ')'"
     | Number(Some(intNum), None) :: rest -> {Expressions = state.Expressions @ [IntExpr(intNum)]; Remaining = rest}
     | Number(None, Some(floatNum)) :: rest -> {Expressions = state.Expressions @ [FloatExpr(floatNum)]; Remaining = rest}
+    | LiteralString s :: rest -> {Expressions = state.Expressions @ [StringExpr s]; Remaining = rest}
     | Symbol(name) :: rest -> {Expressions = state.Expressions @ [SymbolExpr name]; Remaining = rest}
 and private parseList (state: ParseState) =
     let members = parseListMembers({state with Expressions = []})

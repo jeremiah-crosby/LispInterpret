@@ -23,6 +23,13 @@ type InterpreterTests () =
         result |> should equal (FloatResult(5.8))
 
     [<Test>]
+    member this.``should interpret string`` () =
+        let tokens = lex "\"my string\""
+        let parsed = parse tokens
+        let result = parsed |> List.head |> evalExpression
+        result |> should equal (StringResult("my string"))
+
+    [<Test>]
     member this.``should interpret list`` () =
         let tokens = lex "(5.8 1.2 6)"
         let parsed = parse tokens

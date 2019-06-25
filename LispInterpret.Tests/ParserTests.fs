@@ -69,3 +69,8 @@ type ParserTests () =
                 ListExpr [IntExpr(5); IntExpr(2)];
                 ListExpr [SymbolExpr("x")];
                 IntExpr(10)]]
+
+    [<Test>]
+    member this.``should parse literal string`` () =
+        let actual = parse [LiteralString "blah"]
+        actual |> should equal [StringExpr "blah"]

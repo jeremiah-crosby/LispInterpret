@@ -11,3 +11,4 @@ type Expression =
     | SymbolExpr of name: string
     | ErrorExpr of string
     | ListExpr of Expression list
+    | StringExpr of string

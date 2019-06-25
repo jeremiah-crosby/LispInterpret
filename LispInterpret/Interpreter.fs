@@ -5,6 +5,7 @@ open Syntax
 type EvalResult =
     | IntResult of int
     | FloatResult of float
+    | StringResult of string
     | ListResult of EvalResult list
     | Empty
     | ErrorResult of string
@@ -34,6 +35,7 @@ let rec evalExpression (expr: Expression) =
     | ErrorExpr msg -> ErrorResult msg
     | IntExpr(n) -> IntResult n
     | FloatExpr(d) -> FloatResult d
+    | StringExpr(s) -> StringResult s
     | ListExpr(SymbolExpr "+" :: rest) -> evalAdd rest
     | ListExpr(list) -> evalList list
     | _ -> Empty

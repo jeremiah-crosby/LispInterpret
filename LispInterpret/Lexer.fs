@@ -5,6 +5,7 @@ type Token =
     | RightParenthesis
     | Symbol of string
     | Number of int option * float option
+    | LiteralString of string
 
 let rec private lexChars (chars: char list): Token list =
     match chars with
@@ -12,6 +13,7 @@ let rec private lexChars (chars: char list): Token list =
     | ')' :: rest -> RightParenthesis :: lexChars rest
     | digit :: rest when System.Char.IsDigit digit || digit = '.' -> lexNumber(chars, "")
     | space :: rest when System.Char.IsWhiteSpace space -> lexChars rest
+    | '"' :: rest -> lexString(rest, "")
     | [] -> []
     | s :: rest -> lexSymbol(chars, "")
 and lexNumber (chars: char list, number: string) =
@@ -27,6 +29,11 @@ and lexSymbol (chars: char list, name: string) =
     match chars with
     | c :: rest when not (System.Char.IsWhiteSpace c) && c <> '(' && c <> ')' -> lexSymbol(rest, name + c.ToString())
     | rest -> Symbol(name) :: lexChars rest
+and lexString (chars: char list, str: string) =
+    match chars with
+    | '"' :: rest -> LiteralString(str) :: lexChars rest
+    | c :: rest -> lexString(rest, str + c.ToString())
+    | [] -> [LiteralString(str)]
     
 
 let lex (source: string): Token list =
