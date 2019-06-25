@@ -42,3 +42,10 @@ type OperatorAddTests () =
         let parsed = parse tokens
         let result = parsed |> List.head |> evalExpression
         result |> should equal (IntResult(15))
+
+    [<Test>]
+    member this.``(+ 2.34 4) = 6.34`` () =
+        let tokens = lex "(+ 2.34 4)"
+        let parsed = parse tokens
+        let result = parsed |> List.head |> evalExpression
+        result |> should equal (FloatResult(6.34))
