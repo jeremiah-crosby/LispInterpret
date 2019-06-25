@@ -16,19 +16,22 @@ type EvalResult =
 //}
 
 let addList list =
-    if (List.exists (fun e -> match e with | FloatResult(_) -> true | _ -> false) list) then
-        let sum = list |> List.map (fun result ->
-            match result with
-            | FloatResult x -> x
-            | IntResult i -> (float i)
-            | _ -> 0.0) |> List.sum
-        FloatResult sum
-    else
-        let sum = list |> List.map (fun result ->
-            match result with
-            | IntResult x -> x
-            | _ -> 0) |> List.sum
-        IntResult sum
+    try
+        if (List.exists (fun e -> match e with | FloatResult(_) -> true | _ -> false) list) then
+            let sum = list |> List.map (fun result ->
+                match result with
+                | FloatResult x -> x
+                | IntResult i -> (float i)
+                | _ -> invalidArg "result" "All arguments must be numeric") |> List.sum
+            FloatResult sum
+        else
+            let sum = list |> List.map (fun result ->
+                match result with
+                | IntResult x -> x
+                | _ -> invalidArg "result" "All arguments must be numeric") |> List.sum
+            IntResult sum
+    with
+    | :? System.ArgumentException -> ErrorResult("All arguments must be numeric")
 
 let rec evalExpression (expr: Expression) =
     match expr with

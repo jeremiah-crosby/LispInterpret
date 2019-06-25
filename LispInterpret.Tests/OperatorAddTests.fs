@@ -49,3 +49,10 @@ type OperatorAddTests () =
         let parsed = parse tokens
         let result = parsed |> List.head |> evalExpression
         result |> should equal (FloatResult(6.34))
+
+    [<Test>]
+    member this.``(+ 2 "a string") should return error`` () =
+        let tokens = lex "(+ 2 \"a string\")"
+        let parsed = parse tokens
+        let result = parsed |> List.head |> evalExpression
+        result |> should equal (ErrorResult("All arguments must be numeric"))
