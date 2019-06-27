@@ -12,3 +12,4 @@ type Expression =
     | ErrorExpr of string
     | ListExpr of Expression list
     | StringExpr of string
+    | NilExpr

@@ -10,10 +10,16 @@ type EvalResult =
     | Empty
     | ErrorResult of string
 
-//type Environment = {
-//    ParentEnv: Environment
-//    Variables: Map<string, EvalResult>
-//}
+type Environment = {
+    ParentEnv: Option<Environment>
+    Variables: Map<string, EvalResult>
+}
+
+let addOrUpdateBinding (environment: Environment) (symbol: string) (value: EvalResult) =
+    {environment with Variables = Map.add symbol value environment.Variables}
+
+let retrieveBinding (environment: Environment) (symbol: string) =
+    Map.find symbol environment.Variables
 
 let addList list =
     try
@@ -33,22 +39,30 @@ let addList list =
     with
     | :? System.ArgumentException -> ErrorResult("All arguments must be numeric")
 
-let rec evalExpression (expr: Expression) =
+let rec evalExpression (expr: Expression) (environment: Environment) =
     match expr with
-    | ErrorExpr msg -> ErrorResult msg
-    | IntExpr(n) -> IntResult n
-    | FloatExpr(d) -> FloatResult d
-    | StringExpr(s) -> StringResult s
-    | ListExpr(SymbolExpr "+" :: rest) -> evalAdd rest
-    | ListExpr(list) -> evalList list
-    | _ -> Empty
-and evalList (list: Expression list) =
-    list |> List.map (fun (e: Expression) -> evalExpression(e)) |> ListResult
-and evalAdd (args: Expression list) =
-    let evaluated = evalList args
+    | ErrorExpr msg -> (ErrorResult msg, environment)
+    | IntExpr(n) -> (IntResult n, environment)
+    | FloatExpr(d) -> (FloatResult d, environment)
+    | StringExpr(s) -> (StringResult s, environment)
+    | SymbolExpr(s) -> (retrieveBinding environment s, environment)
+    | ListExpr(SymbolExpr "+" :: rest) -> evalAdd rest environment
+    | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
+    | ListExpr(list) -> evalList list environment
+    | _ -> (Empty, environment)
+and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) =
+    let (value, newEnv) = evalExpression valueExpr environment
+    (Empty, addOrUpdateBinding newEnv symbol value)
+and evalList (list: Expression list) (environment: Environment) =
+    //match results with
+    //| [] -> (ListResult results, environment)
+    //| first :: rest -> 
+    (list |> List.map (fun (e: Expression) -> evalExpression e environment) |> List.map (fun (result, _) -> result) |> ListResult, environment)
+and evalAdd (args: Expression list) (environment: Environment) =
+    let evaluated = evalList args environment
     match evaluated with
-    | ListResult([ListResult addends]) -> addList addends
-    | ListResult list when List.length list >= 2 -> addList list
-    | _ -> ErrorResult "At least 2 numeric arguments required"
+    | (ListResult([ListResult addends]), updatedEnv) -> (addList addends, updatedEnv)
+    | (ListResult list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
+    | _ -> (ErrorResult "At least 2 numeric arguments required", environment)
         
     
