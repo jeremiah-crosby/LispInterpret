@@ -10,6 +10,4 @@ open Interpreter
 let evalString source =
     let tokens = lex source
     let parsed = parse tokens
-    let evaluator (_: EvalResult, env: Environment) (expr: Expression) =
-        evalExpression expr env
-    List.fold evaluator (Empty, {Variables = Map.empty; ParentEnv = None}) parsed
+    evalExpressions parsed {Variables = Map.empty; ParentEnv = None}

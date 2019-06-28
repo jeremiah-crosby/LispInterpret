@@ -93,4 +93,7 @@ and evalAdd (args: Expression list) (environment: Environment) =
     | (ListResult list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
     | _ -> (ErrorResult "At least 2 numeric arguments required", environment)
         
-    
+let evalExpressions (expressions: Expression list) (environment: Environment) = 
+    let evaluator (_: EvalResult, env: Environment) (expr: Expression) =
+        evalExpression expr env
+    List.fold evaluator (Empty, {Variables = Map.empty; ParentEnv = None}) expressions
