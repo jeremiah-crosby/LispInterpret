@@ -79,3 +79,13 @@ type InterpreterTests () =
             (x 8)
         "
         result |> should equal (IntResult 16)
+
+    [<Test>]
+    member this.``test setting local variable in function`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (defun x (y)
+                (set z 5)
+                (+ y z))
+            (x 8)
+        "
+        result |> should equal (IntResult 13)
