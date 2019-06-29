@@ -89,3 +89,24 @@ type InterpreterTests () =
             (x 8)
         "
         result |> should equal (IntResult 13)
+
+    [<Test>]
+    member this.``should lookup global variables`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (set global 1)
+            (defun f2 () global)
+            (defun f1 () (f2))
+            (f1)
+        "
+        result |> should equal (IntResult 1)
+
+    [<Test>]
+    member this.``local variables should shadow global variables`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (set myvar 1)
+            (defun f1 ()
+                (set myvar 2)
+                myvar)
+            (f1)
+        "
+        result |> should equal (IntResult 2)

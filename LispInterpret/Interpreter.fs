@@ -31,8 +31,13 @@ exception EvaluationError of string
 let addOrUpdateBinding (environment: Environment) (symbol: string) (value: EvalResult) =
     {environment with Variables = Map.add symbol value environment.Variables}
 
-let retrieveBinding (environment: Environment) (symbol: string) =
-    Map.find symbol environment.Variables
+let rec retrieveBinding (environment: Environment) (symbol: string) =
+    match Map.tryFind symbol environment.Variables with
+    | None ->
+        match environment.ParentEnv with
+        | None -> failwith "Variable not found"
+        | Some(parentEnv) -> retrieveBinding parentEnv symbol
+    | Some(binding) -> binding
 
 let addList list =
     try
@@ -72,9 +77,8 @@ and evalExpressions (expressions: Expression list) (environment: Environment) =
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: DefunArgument list) =
         List.map (fun (a: DefunArgument) -> a.Name) args
-    match Map.tryFind name environment.Variables with
-    | None -> (ErrorResult "Function not found", environment)
-    | Some(DefunResult({Name=name; Arguments=args; Body=body})) ->
+    match retrieveBinding environment name with
+    | DefunResult({Name=name; Arguments=args; Body=body}) ->
         let funcEnvironment = {
             Variables = parameters |> List.map (fun p ->
                                                     let (r, _) = evalExpression p environment
@@ -84,7 +88,7 @@ and evalInvoke (name: string) (parameters: Expression list) (environment: Enviro
             ParentEnv = Some(environment)
         }
         evalExpressions body funcEnvironment
-    | Some(_) -> (ErrorResult("Is not a function"), environment)
+    | _ -> (ErrorResult("Is not a function"), environment)
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
         let result = DefunResult({
