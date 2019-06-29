@@ -63,3 +63,19 @@ type InterpreterTests () =
     member this.``defun with args that are not a list of symbols should error`` () =
         let (result, _) = TestHelpers.evalString "(defun x (5) ())"
         result |> should equal (ErrorResult "Arguments to defun must be symbols")
+
+    [<Test>]
+    member this.``test invoke user defined function with no parameters`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (defun x () 8)
+            (x)
+        "
+        result |> should equal (IntResult 8)
+
+    [<Test>]
+    member this.``test invoke user defined function with 1 parameter`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (defun x (y) (+ y 8))
+            (x 8)
+        "
+        result |> should equal (IntResult 16)

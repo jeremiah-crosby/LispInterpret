@@ -62,8 +62,29 @@ let rec evalExpression (expr: Expression) (environment: Environment) =
     | ListExpr(SymbolExpr "defun" :: SymbolExpr name :: ListExpr argList :: body) -> evalDefun name argList body environment
     | ListExpr(SymbolExpr "+" :: rest) -> evalAdd rest environment
     | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
+    | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
     | ListExpr(list) -> evalList list environment
     | _ -> (Empty, environment)
+and evalExpressions (expressions: Expression list) (environment: Environment) = 
+    let evaluator (_: EvalResult, env: Environment) (expr: Expression) =
+        evalExpression expr env
+    List.fold evaluator (Empty, environment) expressions
+and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
+    let getArgNames (args: DefunArgument list) =
+        List.map (fun (a: DefunArgument) -> a.Name) args
+    match Map.tryFind name environment.Variables with
+    | None -> (ErrorResult "Function not found", environment)
+    | Some(DefunResult({Name=name; Arguments=args; Body=body})) ->
+        let funcEnvironment = {
+            Variables = parameters |> List.map (fun p ->
+                                                    let (r, _) = evalExpression p environment
+                                                    r)
+                                   |> List.zip (getArgNames args)
+                                   |> Map.ofList;
+            ParentEnv = Some(environment)
+        }
+        evalExpressions body funcEnvironment
+    | Some(_) -> (ErrorResult("Is not a function"), environment)
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
         let result = DefunResult({
@@ -92,8 +113,3 @@ and evalAdd (args: Expression list) (environment: Environment) =
     | (ListResult([ListResult addends]), updatedEnv) -> (addList addends, updatedEnv)
     | (ListResult list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
     | _ -> (ErrorResult "At least 2 numeric arguments required", environment)
-        
-let evalExpressions (expressions: Expression list) (environment: Environment) = 
-    let evaluator (_: EvalResult, env: Environment) (expr: Expression) =
-        evalExpression expr env
-    List.fold evaluator (Empty, {Variables = Map.empty; ParentEnv = None}) expressions
