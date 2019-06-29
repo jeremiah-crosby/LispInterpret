@@ -113,9 +113,6 @@ and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) 
     let (value, newEnv) = evalExpression valueExpr environment
     (Empty, addOrUpdateBinding newEnv symbol value)
 and evalList (list: Expression list) (environment: Environment) =
-    //match results with
-    //| [] -> (ListResult results, environment)
-    //| first :: rest -> 
     (list |> List.map (fun (e: Expression) -> evalExpression e environment) |> List.map (fun (result, _) -> result) |> ListResult, environment)
 and evalAdd (args: Expression list) (environment: Environment) =
     let evaluated = evalList args environment
