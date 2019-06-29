@@ -72,8 +72,14 @@ let rec evalExpression (expr: Expression) (environment: Environment) =
     | _ -> (Empty, environment)
 and evalExpressions (expressions: Expression list) (environment: Environment) = 
     let evaluator (_: EvalResult, env: Environment) (expr: Expression) =
-        evalExpression expr env
-    List.fold evaluator (Empty, environment) expressions
+        let result = evalExpression expr env
+        match result with
+        | (ErrorResult(msg), _) ->  raise (EvaluationError(msg))
+        | _ -> result
+    try
+        List.fold evaluator (Empty, environment) expressions
+    with
+        | EvaluationError(msg) -> (ErrorResult(msg), environment)
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: DefunArgument list) =
         List.map (fun (a: DefunArgument) -> a.Name) args

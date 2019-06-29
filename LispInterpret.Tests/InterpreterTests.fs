@@ -110,3 +110,14 @@ type InterpreterTests () =
             (f1)
         "
         result |> should equal (IntResult 2)
+
+    [<Test>]
+    member this.``errors should short circuit evaluation`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (set x 5)
+            (set y 10)
+            (+ y ""5"")
+            x
+            y
+        "
+        result |> should equal (ErrorResult "All arguments must be numeric")
