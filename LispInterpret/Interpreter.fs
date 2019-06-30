@@ -2,33 +2,14 @@
 
 open Syntax
 
-type DefunArgument = {
-    Name: string
-}
-
-type DefunData = {
-    Name: string
-    Arguments: DefunArgument list
-    Body: Expression list
-}
-
-type EvalResult =
-    | IntResult of int
-    | FloatResult of float
-    | StringResult of string
-    | ListResult of EvalResult list
-    | DefunResult of DefunData
-    | Empty
-    | ErrorResult of string
-
 type Environment = {
     ParentEnv: Option<Environment>
-    Variables: Map<string, EvalResult>
+    Variables: Map<string, Expression>
 }
 
 exception EvaluationError of string
 
-let addOrUpdateBinding (environment: Environment) (symbol: string) (value: EvalResult) =
+let addOrUpdateBinding (environment: Environment) (symbol: string) (value: Expression) =
     {environment with Variables = Map.add symbol value environment.Variables}
 
 let rec retrieveBinding (environment: Environment) (symbol: string) =
@@ -41,50 +22,50 @@ let rec retrieveBinding (environment: Environment) (symbol: string) =
 
 let addList list =
     try
-        if (List.exists (fun e -> match e with | FloatResult(_) -> true | _ -> false) list) then
+        if (List.exists (fun e -> match e with | FloatExpr(_) -> true | _ -> false) list) then
             let sum = list |> List.map (fun result ->
                 match result with
-                | FloatResult x -> x
-                | IntResult i -> (float i)
+                | FloatExpr x -> x
+                | IntExpr i -> (float i)
                 | _ -> invalidArg "result" "All arguments must be numeric") |> List.sum
-            FloatResult sum
+            FloatExpr sum
         else
             let sum = list |> List.map (fun result ->
                 match result with
-                | IntResult x -> x
+                | IntExpr x -> x
                 | _ -> invalidArg "result" "All arguments must be numeric") |> List.sum
-            IntResult sum
+            IntExpr sum
     with
-    | :? System.ArgumentException -> ErrorResult("All arguments must be numeric")
+    | :? System.ArgumentException -> ErrorExpr("All arguments must be numeric")
 
 let rec evalExpression (expr: Expression) (environment: Environment) =
     match expr with
-    | ErrorExpr msg -> (ErrorResult msg, environment)
-    | IntExpr(n) -> (IntResult n, environment)
-    | FloatExpr(d) -> (FloatResult d, environment)
-    | StringExpr(s) -> (StringResult s, environment)
+    | ErrorExpr msg -> (ErrorExpr msg, environment)
+    | IntExpr(n) -> (IntExpr n, environment)
+    | FloatExpr(d) -> (FloatExpr d, environment)
+    | StringExpr(s) -> (StringExpr s, environment)
     | SymbolExpr(s) -> (retrieveBinding environment s, environment)
     | ListExpr(SymbolExpr "defun" :: SymbolExpr name :: ListExpr argList :: body) -> evalDefun name argList body environment
     | ListExpr(SymbolExpr "+" :: rest) -> evalAdd rest environment
     | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
     | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
     | ListExpr(list) -> evalList list environment
-    | _ -> (Empty, environment)
+    | _ -> (NilExpr, environment)
 and evalExpressions (expressions: Expression list) (environment: Environment) = 
-    let evaluator (_: EvalResult, env: Environment) (expr: Expression) =
+    let evaluator (_: Expression, env: Environment) (expr: Expression) =
         let result = evalExpression expr env
         match result with
-        | (ErrorResult(msg), _) ->  raise (EvaluationError(msg))
+        | (ErrorExpr(msg), _) ->  raise (EvaluationError(msg))
         | _ -> result
     try
-        List.fold evaluator (Empty, environment) expressions
+        List.fold evaluator (NilExpr, environment) expressions
     with
-        | EvaluationError(msg) -> (ErrorResult(msg), environment)
+        | EvaluationError(msg) -> (ErrorExpr(msg), environment)
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: DefunArgument list) =
         List.map (fun (a: DefunArgument) -> a.Name) args
     match retrieveBinding environment name with
-    | DefunResult({Name=name; Arguments=args; Body=body}) ->
+    | DefunExpr({Name=name; Arguments=args; Body=body}) ->
         let funcEnvironment = {
             Variables = parameters |> List.map (fun p ->
                                                     let (r, _) = evalExpression p environment
@@ -94,10 +75,10 @@ and evalInvoke (name: string) (parameters: Expression list) (environment: Enviro
             ParentEnv = Some(environment)
         }
         evalExpressions body funcEnvironment
-    | _ -> (ErrorResult("Is not a function"), environment)
+    | _ -> (ErrorExpr("Is not a function"), environment)
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
-        let result = DefunResult({
+        let result = DefunExpr({
             Name = name
             Arguments = List.map (fun a ->
                                     match a with
@@ -108,15 +89,17 @@ and evalDefun (name: string) (argList: Expression list) (body: Expression list) 
         })
         (result, addOrUpdateBinding environment name result )
     with
-        | EvaluationError(msg) -> (ErrorResult(msg), environment)
+        | EvaluationError(msg) -> (ErrorExpr(msg), environment)
 and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) =
     let (value, newEnv) = evalExpression valueExpr environment
-    (Empty, addOrUpdateBinding newEnv symbol value)
+    (NilExpr, addOrUpdateBinding newEnv symbol value)
 and evalList (list: Expression list) (environment: Environment) =
-    (list |> List.map (fun (e: Expression) -> evalExpression e environment) |> List.map (fun (result, _) -> result) |> ListResult, environment)
+    (list |> List.map (fun (e: Expression) -> evalExpression e environment) |> List.map (fun (result, _) -> result) |> ListExpr, environment)
 and evalAdd (args: Expression list) (environment: Environment) =
     let evaluated = evalList args environment
     match evaluated with
-    | (ListResult([ListResult addends]), updatedEnv) -> (addList addends, updatedEnv)
-    | (ListResult list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
-    | _ -> (ErrorResult "At least 2 numeric arguments required", environment)
+    | (ListExpr([ListExpr addends]), updatedEnv) -> (addList addends, updatedEnv)
+    | (ListExpr list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
+    | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
+
+
