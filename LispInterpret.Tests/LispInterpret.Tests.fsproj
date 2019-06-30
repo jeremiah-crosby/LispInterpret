@@ -19,6 +19,7 @@
     <Compile Include="ParserTests.fs" />
     <Compile Include="InterpreterTests.fs" />
     <Compile Include="OperatorAddTests.fs" />
+    <Compile Include="QuoteTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

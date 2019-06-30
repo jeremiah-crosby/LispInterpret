@@ -48,6 +48,7 @@ let rec evalExpression (expr: Expression) (environment: Environment) =
     | ListExpr(SymbolExpr "defun" :: SymbolExpr name :: ListExpr argList :: body) -> evalDefun name argList body environment
     | ListExpr(SymbolExpr "+" :: rest) -> evalAdd rest environment
     | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
+    | ListExpr([SymbolExpr "quote"; _ as expr]) -> (expr, environment)
     | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
     | ListExpr(list) -> evalList list environment
     | _ -> (NilExpr, environment)
