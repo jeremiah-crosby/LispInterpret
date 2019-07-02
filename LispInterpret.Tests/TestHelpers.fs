@@ -10,4 +10,4 @@ open Interpreter
 let evalString source =
     let tokens = lex source
     let parsed = parse tokens
-    evalExpressions parsed {Variables = Map.empty; ParentEnv = None}
+    evalExpressions parsed (createGlobalEnv ())

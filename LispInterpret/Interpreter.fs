@@ -5,7 +5,9 @@ open Syntax
 type Environment = {
     ParentEnv: Option<Environment>
     Variables: Map<string, Expression>
+    Intrinsics: Map<string, IntrinsicFunction>
 }
+and IntrinsicFunction = Expression list -> Environment -> Expression * Environment
 
 exception EvaluationError of string
 
@@ -18,6 +20,14 @@ let rec retrieveBinding (environment: Environment) (symbol: string) =
         match environment.ParentEnv with
         | None -> failwith "Variable not found"
         | Some(parentEnv) -> retrieveBinding parentEnv symbol
+    | Some(binding) -> binding
+
+let rec retrieveIntrinsic (environment: Environment) (symbol: string) =
+    match Map.tryFind symbol environment.Intrinsics with
+    | None ->
+        match environment.ParentEnv with
+        | None -> failwith "Variable not found"
+        | Some(parentEnv) -> retrieveIntrinsic parentEnv symbol
     | Some(binding) -> binding
 
 let addList list =
@@ -46,7 +56,6 @@ let rec evalExpression (expr: Expression) (environment: Environment) =
     | StringExpr(s) -> (StringExpr s, environment)
     | SymbolExpr(s) -> (retrieveBinding environment s, environment)
     | ListExpr(SymbolExpr "defun" :: SymbolExpr name :: ListExpr argList :: body) -> evalDefun name argList body environment
-    | ListExpr(SymbolExpr "+" :: rest) -> evalAdd rest environment
     | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
     | ListExpr([SymbolExpr "quote"; _ as expr]) -> (expr, environment)
     | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
@@ -65,18 +74,25 @@ and evalExpressions (expressions: Expression list) (environment: Environment) =
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: DefunArgument list) =
         List.map (fun (a: DefunArgument) -> a.Name) args
-    match retrieveBinding environment name with
-    | DefunExpr({Name=name; Arguments=args; Body=body}) ->
-        let funcEnvironment = {
-            Variables = parameters |> List.map (fun p ->
-                                                    let (r, _) = evalExpression p environment
-                                                    r)
-                                   |> List.zip (getArgNames args)
-                                   |> Map.ofList;
-            ParentEnv = Some(environment)
-        }
-        evalExpressions body funcEnvironment
-    | _ -> (ErrorExpr("Is not a function"), environment)
+    try
+        match retrieveBinding environment name with
+        | DefunExpr({Name=name; Arguments=args; Body=body}) ->
+            let funcEnvironment = {
+                Variables = parameters |> List.map (fun p ->
+                                                        let (r, _) = evalExpression p environment
+                                                        r)
+                                       |> List.zip (getArgNames args)
+                                       |> Map.ofList;
+                ParentEnv = Some(environment);
+                Intrinsics = Map.empty
+            }
+            evalExpressions body funcEnvironment
+        | _ -> (ErrorExpr("Is not a function"), environment)
+    with
+    | Failure(msg) ->
+        match retrieveIntrinsic environment name with
+        | IntrinsicFunction as func -> func parameters environment
+        | _ -> (ErrorExpr("Is not a function"), environment)
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
         let result = DefunExpr({
@@ -103,4 +119,11 @@ and evalAdd (args: Expression list) (environment: Environment) =
     | (ListExpr list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
     | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
 
-
+let createGlobalEnv () =
+    {
+        Variables = Map.empty;
+        ParentEnv = None;
+        Intrinsics = [
+            ("+", evalAdd)
+        ] |> Map.ofList
+    }
