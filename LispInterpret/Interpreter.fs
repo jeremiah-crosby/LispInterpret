@@ -30,7 +30,7 @@ let rec retrieveIntrinsic (environment: Environment) (symbol: string) =
         | Some(parentEnv) -> retrieveIntrinsic parentEnv symbol
     | Some(binding) -> binding
 
-let addList list =
+let mathOpList list op =
     try
         (*
             To deal with mixed float and integer math operations, the operations are all performed on floats. We
@@ -42,7 +42,7 @@ let addList list =
             match result with
             | FloatExpr x -> x, false
             | IntExpr i -> (float i), true
-            | _ -> invalidArg "result" "All arguments must be numeric") |> List.reduce (fun (x, xint) (y, yint) -> (+) x y, xint && yint)
+            | _ -> invalidArg "result" "All arguments must be numeric") |> List.reduce (fun (x, xint) (y, yint) -> op x y, xint && yint)
         match mathResult with
         | (r, true) -> IntExpr (int r)
         | (r, false) -> FloatExpr r
@@ -113,10 +113,10 @@ and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) 
     (NilExpr, addOrUpdateBinding newEnv symbol value)
 and evalList (list: Expression list) (environment: Environment) =
     (list |> List.map (fun (e: Expression) -> evalExpression e environment) |> List.map (fun (result, _) -> result) |> ListExpr, environment)
-and evalAdd (args: Expression list) (environment: Environment) =
+and evalMath op (args: Expression list) (environment: Environment) =
     let evaluated = evalList args environment
     match evaluated with
-    | (ListExpr list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
+    | (ListExpr list, updatedEnv) when List.length list >= 2 -> (mathOpList list op, updatedEnv)
     | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
 
 let createGlobalEnv () =
@@ -124,6 +124,6 @@ let createGlobalEnv () =
         Variables = Map.empty;
         ParentEnv = None;
         Intrinsics = [
-            ("+", evalAdd)
+            ("+", evalMath (+))
         ] |> Map.ofList
     }
