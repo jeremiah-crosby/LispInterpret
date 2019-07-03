@@ -32,19 +32,20 @@ let rec retrieveIntrinsic (environment: Environment) (symbol: string) =
 
 let addList list =
     try
-        if (List.exists (fun e -> match e with | FloatExpr(_) -> true | _ -> false) list) then
-            let sum = list |> List.map (fun result ->
-                match result with
-                | FloatExpr x -> x
-                | IntExpr i -> (float i)
-                | _ -> invalidArg "result" "All arguments must be numeric") |> List.sum
-            FloatExpr sum
-        else
-            let sum = list |> List.map (fun result ->
-                match result with
-                | IntExpr x -> x
-                | _ -> invalidArg "result" "All arguments must be numeric") |> List.sum
-            IntExpr sum
+        (*
+            To deal with mixed float and integer math operations, the operations are all performed on floats. We
+            keep track of a boolean saying whether all operands are ints (the second part of the tuple created in map).
+            The reduce performing the operation accumulates whether all operands are ints. If so, it casts the result to
+            an int, other it will be a float.
+        *)
+        let mathResult = list |> List.map (fun result ->
+            match result with
+            | FloatExpr x -> x, false
+            | IntExpr i -> (float i), true
+            | _ -> invalidArg "result" "All arguments must be numeric") |> List.reduce (fun (x, xint) (y, yint) -> (+) x y, xint && yint)
+        match mathResult with
+        | (r, true) -> IntExpr (int r)
+        | (r, false) -> FloatExpr r
     with
     | :? System.ArgumentException -> ErrorExpr("All arguments must be numeric")
 
