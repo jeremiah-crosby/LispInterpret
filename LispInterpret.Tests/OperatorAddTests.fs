@@ -30,9 +30,9 @@ type OperatorAddTests () =
         result |> should equal (IntExpr(15))
 
     [<Test>]
-    member this.``(+ (5 5 5)) = 15`` () =
+    member this.``add list throws 2 numeric args required`` () =
         let (result, _) = TestHelpers.evalString "(+ (5 5 5))"
-        result |> should equal (IntExpr(15))
+        result |> should equal (ErrorExpr("At least 2 numeric arguments required"))
 
     [<Test>]
     member this.``(+ 2.34 4) = 6.34`` () =

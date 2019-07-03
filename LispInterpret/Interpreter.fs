@@ -115,7 +115,6 @@ and evalList (list: Expression list) (environment: Environment) =
 and evalAdd (args: Expression list) (environment: Environment) =
     let evaluated = evalList args environment
     match evaluated with
-    | (ListExpr([ListExpr addends]), updatedEnv) -> (addList addends, updatedEnv)
     | (ListExpr list, updatedEnv) when List.length list >= 2 -> (addList list, updatedEnv)
     | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
 
