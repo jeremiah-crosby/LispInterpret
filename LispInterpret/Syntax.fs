@@ -23,12 +23,3 @@ and DefunData = {
     Arguments: DefunArgument list
     Body: Expression list
 }
-
-type EvalResult =
-    | IntResult of int
-    | FloatResult of float
-    | StringResult of string
-    | ListResult of EvalResult list
-    | DefunResult of DefunData
-    | Empty
-    | ErrorResult of string
