@@ -67,3 +67,8 @@ type MathOperatorTests () =
     member this.``(/ 8 4) = 2`` () =
         let (result, _) = TestHelpers.evalString "(/ 8 4)"
         result |> should equal (IntExpr 2)
+
+    [<Test>]
+    member this.``(/ 8.25 3) = 2.75`` () =
+        let (result, _) = TestHelpers.evalString "(/ 8.25 3)"
+        result |> should equal (FloatExpr 2.75)
