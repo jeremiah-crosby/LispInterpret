@@ -7,7 +7,7 @@ open Parser
 open Syntax
 open Interpreter
 
-type OperatorAddTests () =
+type MathOperatorTests () =
 
     [<Test>]
     member this.``(+) should be error`` () =
@@ -52,3 +52,18 @@ type OperatorAddTests () =
             (+ x y)
         "
         result |> should equal (IntExpr 11)
+
+    [<Test>]
+    member this.``(* 8 8) = 64`` () =
+        let (result, _) = TestHelpers.evalString "(* 8 8)"
+        result |> should equal (IntExpr 64)
+
+    [<Test>]
+    member this.``(- 8 8) = 0`` () =
+        let (result, _) = TestHelpers.evalString "(- 8 8)"
+        result |> should equal (IntExpr 0)
+
+    [<Test>]
+    member this.``(/ 8 4) = 2`` () =
+        let (result, _) = TestHelpers.evalString "(/ 8 4)"
+        result |> should equal (IntExpr 2)

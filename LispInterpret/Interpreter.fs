@@ -125,5 +125,8 @@ let createGlobalEnv () =
         ParentEnv = None;
         Intrinsics = [
             ("+", evalMath (+))
+            ("-", evalMath (-))
+            ("/", evalMath (/))
+            ("*", evalMath (*))
         ] |> Map.ofList
     }
