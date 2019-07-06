@@ -1,5 +1,7 @@
 ﻿module Syntax
 
+open System
+
 type ArgumentExpr = {
     TypeName: string
     ArgumentName: string

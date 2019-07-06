@@ -10,4 +10,4 @@ open Interpreter
 let evalString source =
     let tokens = lex source
     let parsed = parse tokens
-    evalExpressions parsed (createGlobalEnv ())
+    evalExpressions (createGlobalEnv ()) parsed

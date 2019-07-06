@@ -49,7 +49,7 @@ let mathOpList list op =
     with
     | :? System.ArgumentException -> ErrorExpr("All arguments must be numeric")
 
-let rec evalExpression (expr: Expression) (environment: Environment) =
+let rec evalExpression (environment: Environment) (expr: Expression)  =
     match expr with
     | ErrorExpr msg -> (ErrorExpr msg, environment)
     | IntExpr(n) -> (IntExpr n, environment)
@@ -62,9 +62,9 @@ let rec evalExpression (expr: Expression) (environment: Environment) =
     | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
     | ListExpr(list) -> evalList list environment
     | _ -> (NilExpr, environment)
-and evalExpressions (expressions: Expression list) (environment: Environment) = 
+and evalExpressions (environment: Environment) (expressions: Expression list) = 
     let evaluator (_: Expression, env: Environment) (expr: Expression) =
-        let result = evalExpression expr env
+        let result = evalExpression env expr
         match result with
         | (ErrorExpr(msg), _) ->  raise (EvaluationError(msg))
         | _ -> result
@@ -80,14 +80,14 @@ and evalInvoke (name: string) (parameters: Expression list) (environment: Enviro
         | DefunExpr({Name=name; Arguments=args; Body=body}) ->
             let funcEnvironment = {
                 Variables = parameters |> List.map (fun p ->
-                                                        let (r, _) = evalExpression p environment
+                                                        let (r, _) = evalExpression environment p
                                                         r)
                                        |> List.zip (getArgNames args)
                                        |> Map.ofList;
                 ParentEnv = Some(environment);
                 Intrinsics = Map.empty
             }
-            evalExpressions body funcEnvironment
+            evalExpressions funcEnvironment body
         | _ -> (ErrorExpr("Is not a function"), environment)
     with
     | Failure(msg) ->
@@ -109,10 +109,10 @@ and evalDefun (name: string) (argList: Expression list) (body: Expression list) 
     with
         | EvaluationError(msg) -> (ErrorExpr(msg), environment)
 and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) =
-    let (value, newEnv) = evalExpression valueExpr environment
+    let (value, newEnv) = evalExpression environment valueExpr
     (NilExpr, addOrUpdateBinding newEnv symbol value)
 and evalList (list: Expression list) (environment: Environment) =
-    (list |> List.map (fun (e: Expression) -> evalExpression e environment) |> List.map (fun (result, _) -> result) |> ListExpr, environment)
+    (list |> List.map (fun (e: Expression) -> evalExpression environment e) |> List.map (fun (result, _) -> result) |> ListExpr, environment)
 and evalMath op (args: Expression list) (environment: Environment) =
     let evaluated = evalList args environment
     match evaluated with
@@ -130,3 +130,15 @@ let createGlobalEnv () =
             ("*", evalMath (*))
         ] |> Map.ofList
     }
+
+let rec printExpression = function
+| (ListExpr(list), env) -> "(" + System.String.Join(" ", (List.map (fun e -> printExpression (e, env)) list)) + ")"
+| (StringExpr(s), _) ->
+    let escape = String.collect (function '"' -> "\\\"" | c -> c.ToString()) // escape quotes
+    "\"" + (escape s) + "\""
+| (SymbolExpr(s), _) -> s
+| (IntExpr(n), _) -> n.ToString()
+| (FloatExpr(f), _) -> f.ToString()
+| (DefunExpr(_), _) -> "Function"
+| (NilExpr, _) -> "nil"
+| (ErrorExpr(e), _) -> String.concat " " ["Error"; e]

@@ -1,8 +1,21 @@
-﻿// Learn more about F# at http://fsharp.org
+﻿module Program
 
-open System
+open Lexer
+open Parser
+open Interpreter
 
-[<EntryPoint>]
-let main argv =
-    printfn "Hello World from F#!"
-    0 // return an integer exit code
+let rec repl env =
+    try
+        printf ">> "
+        let (output, updatedEnv) = System.Console.ReadLine() |> lex |> parse |> evalExpressions env
+        printExpression (output, updatedEnv) |> System.Console.Out.WriteLine
+        repl updatedEnv
+    with ex ->
+        printf "Error: %s" ex.Message
+        repl env
+
+let [<EntryPoint>] main _ =
+    let env = createGlobalEnv ()
+    System.Console.WriteLine("Welcome to LispInterpret")
+    repl env
+    0
