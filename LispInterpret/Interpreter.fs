@@ -18,7 +18,7 @@ let rec retrieveBinding (environment: Environment) (symbol: string) =
     match Map.tryFind symbol environment.Variables with
     | None ->
         match environment.ParentEnv with
-        | None -> failwith "Variable not found"
+        | None -> ErrorExpr "Variable not found"
         | Some(parentEnv) -> retrieveBinding parentEnv symbol
     | Some(binding) -> binding
 
@@ -75,25 +75,26 @@ and evalExpressions (environment: Environment) (expressions: Expression list) =
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: DefunArgument list) =
         List.map (fun (a: DefunArgument) -> a.Name) args
-    try
-        match retrieveBinding environment name with
-        | DefunExpr({Name=name; Arguments=args; Body=body}) ->
-            let funcEnvironment = {
-                Variables = parameters |> List.map (fun p ->
-                                                        let (r, _) = evalExpression environment p
-                                                        r)
-                                       |> List.zip (getArgNames args)
-                                       |> Map.ofList;
-                ParentEnv = Some(environment);
-                Intrinsics = Map.empty
-            }
-            evalExpressions funcEnvironment body
-        | _ -> (ErrorExpr("Is not a function"), environment)
-    with
-    | Failure(msg) ->
+    match retrieveBinding environment name with
+    | DefunExpr({Name=name; Arguments=args; Body=body}) ->
+        let funcEnvironment = {
+            Variables = parameters |> List.map (fun p ->
+                                                    let (r, _) = evalExpression environment p
+                                                    r)
+                                   |> List.zip (getArgNames args)
+                                   |> Map.ofList;
+            ParentEnv = Some(environment);
+            Intrinsics = Map.empty
+        }
+        let result, _ = evalExpressions funcEnvironment body
+        result, environment
+    | _ -> 
         match retrieveIntrinsic environment name with
-        | IntrinsicFunction as func -> func parameters environment
+        | IntrinsicFunction as func ->
+            let result, _ = func parameters environment
+            result, environment
         | _ -> (ErrorExpr("Is not a function"), environment)
+        
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
         let result = DefunExpr({

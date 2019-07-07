@@ -19,6 +19,7 @@ type Expression =
     | ListExpr of Expression list
     | StringExpr of string
     | DefunExpr of DefunData
+    | BoolExpr of bool
     | NilExpr
 and DefunData = {
     Name: string

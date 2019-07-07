@@ -2,10 +2,7 @@
 
 open NUnit.Framework
 open FsUnit
-open Lexer
-open Parser
 open Syntax
-open Interpreter
 
 type MathOperatorTests () =
 

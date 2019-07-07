@@ -120,3 +120,13 @@ type InterpreterTests () =
             y
         "
         result |> should equal (ErrorExpr "All arguments must be numeric")
+
+    [<Test>]
+    member this.``local variables should be destroyed`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (defun x ()
+              (set y 5))
+            (x)
+            y
+        "
+        result |> should equal (ErrorExpr "Variable not found")
