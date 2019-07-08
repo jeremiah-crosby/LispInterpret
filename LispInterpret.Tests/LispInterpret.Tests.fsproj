@@ -20,6 +20,7 @@
     <Compile Include="InterpreterTests.fs" />
     <Compile Include="MathOperatorTests.fs" />
     <Compile Include="QuoteTests.fs" />
+    <Compile Include="IfTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

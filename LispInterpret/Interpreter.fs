@@ -55,13 +55,29 @@ let rec evalExpression (environment: Environment) (expr: Expression)  =
     | IntExpr(n) -> (IntExpr n, environment)
     | FloatExpr(d) -> (FloatExpr d, environment)
     | StringExpr(s) -> (StringExpr s, environment)
+    | SymbolExpr "nil" -> (NilExpr, environment)
     | SymbolExpr(s) -> (retrieveBinding environment s, environment)
     | ListExpr(SymbolExpr "defun" :: SymbolExpr name :: ListExpr argList :: body) -> evalDefun name argList body environment
     | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
     | ListExpr([SymbolExpr "quote"; _ as expr]) -> (expr, environment)
+    | ListExpr(SymbolExpr "if" :: test :: rest) -> evalIf environment test rest
     | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
     | ListExpr(list) -> evalList list environment
     | _ -> (NilExpr, environment)
+and evalIf (environment: Environment) (test: Expression) (body: Expression list) =
+    let len = List.length body
+    if len < 1 then
+        ErrorExpr "At least 1 body expression required for if", environment
+    else if len > 2 then
+        ErrorExpr "Too many body expressions for if, expecting 1 or 2", environment
+    else
+        match evalExpression environment test with
+        | (NilExpr, _) | (ListExpr([]), _) ->
+            if List.length body = 1 then
+                NilExpr, environment
+            else
+                body |> List.item 1 |> evalExpression environment
+        | _ -> body |> List.head |> evalExpression environment
 and evalExpressions (environment: Environment) (expressions: Expression list) = 
     let evaluator (_: Expression, env: Environment) (expr: Expression) =
         let result = evalExpression env expr
