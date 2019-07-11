@@ -49,6 +49,23 @@ let mathOpList list op =
     with
     | :? System.ArgumentException -> ErrorExpr("All arguments must be numeric")
 
+let compare op (args: Expression list) (env: Environment) =
+    match args with
+    | [expr1; expr2;] ->
+        let f1 = match expr1 with
+            | IntExpr(i) -> (float i)
+            | FloatExpr(f) -> f
+            | _ -> failwith "Arguments must be numeric"
+        let f2 = match expr2 with
+            | IntExpr(i) -> (float i)
+            | FloatExpr(f) -> f
+            | _ -> failwith "Arguments must be numeric"
+        if op f1 f2 then
+            SymbolExpr "T", env
+        else
+            NilExpr, env
+    | _ -> failwith "Exactly 2 numeric arguments required"
+
 let rec evalExpression (environment: Environment) (expr: Expression)  =
     match expr with
     | ErrorExpr msg -> (ErrorExpr msg, environment)
@@ -145,6 +162,11 @@ let createGlobalEnv () =
             ("-", evalMath (-))
             ("/", evalMath (/))
             ("*", evalMath (*))
+            ("<", compare (<))
+            (">", compare (>))
+            (">=", compare (>=))
+            ("<=", compare (<=))
+            ("=", compare (=))
         ] |> Map.ofList
     }
 
