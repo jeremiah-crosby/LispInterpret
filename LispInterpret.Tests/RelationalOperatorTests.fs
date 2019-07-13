@@ -46,5 +46,14 @@ type RelationalOperatorTests () =
         let (result, _) = TestHelpers.evalString "(= 7 6)"
         result |> should equal (NilExpr)
 
+    [<Test>]
+    member this.``test comparing variables`` () =
+        let (result, _) = TestHelpers.evalString @"
+            (set x 1)
+            (set y 2)
+            (< x y)
+        "
+        result |> should equal (SymbolExpr "T")
+
 
 

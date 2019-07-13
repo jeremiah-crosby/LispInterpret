@@ -49,23 +49,6 @@ let mathOpList list op =
     with
     | :? System.ArgumentException -> ErrorExpr("All arguments must be numeric")
 
-let compare op (args: Expression list) (env: Environment) =
-    match args with
-    | [expr1; expr2;] ->
-        let f1 = match expr1 with
-            | IntExpr(i) -> (float i)
-            | FloatExpr(f) -> f
-            | _ -> failwith "Arguments must be numeric"
-        let f2 = match expr2 with
-            | IntExpr(i) -> (float i)
-            | FloatExpr(f) -> f
-            | _ -> failwith "Arguments must be numeric"
-        if op f1 f2 then
-            SymbolExpr "T", env
-        else
-            NilExpr, env
-    | _ -> failwith "Exactly 2 numeric arguments required"
-
 let rec evalExpression (environment: Environment) (expr: Expression)  =
     match expr with
     | ErrorExpr msg -> (ErrorExpr msg, environment)
@@ -152,6 +135,23 @@ and evalMath op (args: Expression list) (environment: Environment) =
     match evaluated with
     | (ListExpr list, updatedEnv) when List.length list >= 2 -> (mathOpList list op, updatedEnv)
     | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
+and evalCompare op (args: Expression list) (env: Environment) =
+    let evaluated = evalList args env
+    match evaluated with
+    | (ListExpr([expr1; expr2;]), _) ->
+        let f1 = match expr1 with
+            | IntExpr(i) -> (float i)
+            | FloatExpr(f) -> f
+            | _ -> failwith "Arguments must be numeric"
+        let f2 = match expr2 with
+            | IntExpr(i) -> (float i)
+            | FloatExpr(f) -> f
+            | _ -> failwith "Arguments must be numeric"
+        if op f1 f2 then
+            SymbolExpr "T", env
+        else
+            NilExpr, env
+    | _ -> failwith "Exactly 2 numeric arguments required"
 
 let createGlobalEnv () =
     {
@@ -162,11 +162,11 @@ let createGlobalEnv () =
             ("-", evalMath (-))
             ("/", evalMath (/))
             ("*", evalMath (*))
-            ("<", compare (<))
-            (">", compare (>))
-            (">=", compare (>=))
-            ("<=", compare (<=))
-            ("=", compare (=))
+            ("<", evalCompare (<))
+            (">", evalCompare (>))
+            (">=", evalCompare (>=))
+            ("<=", evalCompare (<=))
+            ("=", evalCompare (=))
         ] |> Map.ofList
     }
 
