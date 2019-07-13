@@ -106,10 +106,10 @@ and evalExpressions (environment: Environment) (expressions: Expression list) =
     with
         | EvaluationError(msg) -> (ErrorExpr(msg), environment)
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
-    let getArgNames (args: DefunArgument list) =
-        List.map (fun (a: DefunArgument) -> a.Name) args
+    let getArgNames (args: FunctionArgument list) =
+        List.map (fun (a: FunctionArgument) -> a.Name) args
     match retrieveBinding environment name with
-    | DefunExpr({Name=name; Arguments=args; Body=body}) ->
+    | FunctionExpr({Name=name; Arguments=args; Body=body}) ->
         let funcEnvironment = {
             Variables = parameters |> List.map (fun p ->
                                                     let (r, _) = evalExpression environment p
@@ -130,7 +130,7 @@ and evalInvoke (name: string) (parameters: Expression list) (environment: Enviro
         
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
-        let result = DefunExpr({
+        let result = FunctionExpr({
             Name = name
             Arguments = List.map (fun a ->
                                     match a with
@@ -178,6 +178,6 @@ let rec printExpression = function
 | (SymbolExpr(s), _) -> s
 | (IntExpr(n), _) -> n.ToString()
 | (FloatExpr(f), _) -> f.ToString()
-| (DefunExpr(_), _) -> "Function"
+| (FunctionExpr(_), _) -> "Function"
 | (NilExpr, _) -> "nil"
 | (ErrorExpr(e), _) -> String.concat " " ["Error"; e]

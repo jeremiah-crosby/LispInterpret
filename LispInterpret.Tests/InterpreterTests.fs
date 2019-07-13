@@ -49,13 +49,13 @@ type InterpreterTests () =
     [<Test>]
     member this.``should generate function definition for defun with empty arg list`` () =
         let (result, env) = TestHelpers.evalString "(defun x () (+ 1 2))"
-        result |> should equal (DefunExpr{ Name = "x"; Arguments = []; Body = [ListExpr [SymbolExpr "+"; IntExpr 1; IntExpr 2]]})
+        result |> should equal (FunctionExpr{ Name = "x"; Arguments = []; Body = [ListExpr [SymbolExpr "+"; IntExpr 1; IntExpr 2]]})
         env.Variables |> Map.containsKey "x" |> should equal true
 
     [<Test>]
     member this.``should generate function definition for defun with non-empty arg list`` () =
         let (result, env) = TestHelpers.evalString "(defun x (y z) (+ y z))"
-        result |> should equal (DefunExpr{ Name = "x"; Arguments = [{Name = "y";}; {Name = "z";}]; Body = [ListExpr [SymbolExpr "+"; SymbolExpr "y"; SymbolExpr "z"]]})
+        result |> should equal (FunctionExpr{ Name = "x"; Arguments = [{Name = "y";}; {Name = "z";}]; Body = [ListExpr [SymbolExpr "+"; SymbolExpr "y"; SymbolExpr "z"]]})
         env.Variables |> Map.containsKey "x" |> should equal true
 
     [<Test>]

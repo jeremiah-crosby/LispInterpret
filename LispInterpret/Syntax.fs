@@ -7,7 +7,7 @@ type ArgumentExpr = {
     ArgumentName: string
 }
 
-type DefunArgument = {
+type FunctionArgument = {
     Name: string
 }
 
@@ -18,11 +18,11 @@ type Expression =
     | ErrorExpr of string
     | ListExpr of Expression list
     | StringExpr of string
-    | DefunExpr of DefunData
+    | FunctionExpr of FunctionData
     | BoolExpr of bool
     | NilExpr
-and DefunData = {
+and FunctionData = {
     Name: string
-    Arguments: DefunArgument list
+    Arguments: FunctionArgument list
     Body: Expression list
 }
