@@ -9,6 +9,7 @@ type Environment = {
 }
 and IntrinsicFunction = Expression list -> Environment -> Expression * Environment
 
+
 exception EvaluationError of string
 
 let addOrUpdateBinding (environment: Environment) (symbol: string) (value: Expression) =
@@ -30,24 +31,20 @@ let rec retrieveIntrinsic (environment: Environment) (symbol: string) =
         | Some(parentEnv) -> retrieveIntrinsic parentEnv symbol
     | Some(binding) -> binding
 
+let coerceFloat = function
+| IntExpr(n) -> (float n)
+| FloatExpr(f) -> f
+| _ -> raise (EvaluationError("Not a number"))
+
 let mathOpList list op =
     try
-        (*
-            To deal with mixed float and integer math operations, the operations are all performed on floats. We
-            keep track of a boolean saying whether all operands are ints (the second part of the tuple created in map).
-            The reduce performing the operation accumulates whether all operands are ints. If so, it casts the result to
-            an int, other it will be a float.
-        *)
-        let mathResult = list |> List.map (fun result ->
-            match result with
-            | FloatExpr x -> x, false
-            | IntExpr i -> (float i), true
-            | _ -> invalidArg "result" "All arguments must be numeric") |> List.reduce (fun (x, xint) (y, yint) -> op x y, xint && yint)
+        let anyFloat = List.exists (fun e -> match e with | FloatExpr(_) -> true | _ -> false) list
+        let mathResult = list |> List.map (fun result -> coerceFloat result) |> List.reduce (fun x y -> op x y)
         match mathResult with
-        | (r, true) -> IntExpr (int r)
-        | (r, false) -> FloatExpr r
+        | r when anyFloat = false -> IntExpr (int r)
+        | r when anyFloat = true -> FloatExpr r
     with
-    | :? System.ArgumentException -> ErrorExpr("All arguments must be numeric")
+    | :? EvaluationError -> ErrorExpr("All arguments must be numeric")
 
 let rec evalExpression (environment: Environment) (expr: Expression)  =
     match expr with
@@ -139,15 +136,7 @@ and evalCompare op (args: Expression list) (env: Environment) =
     let evaluated = evalList args env
     match evaluated with
     | (ListExpr([expr1; expr2;]), _) ->
-        let f1 = match expr1 with
-            | IntExpr(i) -> (float i)
-            | FloatExpr(f) -> f
-            | _ -> failwith "Arguments must be numeric"
-        let f2 = match expr2 with
-            | IntExpr(i) -> (float i)
-            | FloatExpr(f) -> f
-            | _ -> failwith "Arguments must be numeric"
-        if op f1 f2 then
+        if op (coerceFloat expr1) (coerceFloat expr2) then
             SymbolExpr "T", env
         else
             NilExpr, env
