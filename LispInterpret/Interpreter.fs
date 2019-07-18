@@ -141,6 +141,13 @@ and evalCompare op (args: Expression list) (env: Environment) =
             NilExpr, env
     | _ -> failwith "Exactly 2 numeric arguments required"
 
+let cons args env =
+    match args with
+    | [a; ListExpr(b)] -> ListExpr([a] @ b), env
+    | [a; NilExpr] -> ListExpr([a]), env
+    | [a; b] -> ListExpr [a; b], env
+    | _ -> ErrorExpr("Exactly two arguments expected"), env
+
 let createGlobalEnv () =
     {
         Variables = Map.empty;
@@ -155,6 +162,8 @@ let createGlobalEnv () =
             (">=", evalCompare (>=))
             ("<=", evalCompare (<=))
             ("=", evalCompare (=))
+            ("list", (fun args env -> ListExpr(args), env))
+            ("cons", cons)
         ] |> Map.ofList
     }
 

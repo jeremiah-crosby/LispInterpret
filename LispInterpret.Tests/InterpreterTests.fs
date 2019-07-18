@@ -130,3 +130,8 @@ type InterpreterTests () =
             y
         "
         result |> should equal (ErrorExpr "Variable not found")
+        
+    [<Test>]
+    member this.``(list 1 2 3) = (1 2 3)`` () =
+        let (result, _) = TestHelpers.evalString @"(list 1 2 3)"
+        result |> should equal (ListExpr([IntExpr(1); IntExpr(2); IntExpr(3)]))

@@ -22,6 +22,7 @@
     <Compile Include="RelationalOperatorTests.fs" />
     <Compile Include="QuoteTests.fs" />
     <Compile Include="IfTests.fs" />
+    <Compile Include="ConsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
