@@ -85,15 +85,16 @@ and evalExpressions (environment: Environment) (expressions: Expression list) =
         List.fold evaluator (NilExpr, environment) expressions
     with
         | EvaluationError(msg) -> (ErrorExpr(msg), environment)
+and mapEval (env: Environment) (expressions: Expression list) =
+    List.map (fun exp -> let (e, _) = evalExpression env exp
+                         e) expressions
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: FunctionArgument list) =
         List.map (fun (a: FunctionArgument) -> a.Name) args
     match retrieveBinding environment name with
     | FunctionExpr({Name=name; Arguments=args; Body=body}) ->
         let funcEnvironment = {
-            Variables = parameters |> List.map (fun p ->
-                                                    let (r, _) = evalExpression environment p
-                                                    r)
+            Variables = parameters |> mapEval environment
                                    |> List.zip (getArgNames args)
                                    |> Map.ofList;
             ParentEnv = Some(environment);
@@ -104,7 +105,7 @@ and evalInvoke (name: string) (parameters: Expression list) (environment: Enviro
     | _ -> 
         match retrieveIntrinsic environment name with
         | IntrinsicFunction as func ->
-            let result, _ = func parameters environment
+            let result, _ = func (mapEval environment parameters) environment
             result, environment
         | _ -> (ErrorExpr("Is not a function"), environment)
         
@@ -128,14 +129,12 @@ and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) 
 and evalList (list: Expression list) (environment: Environment) =
     (list |> List.map (fun (e: Expression) -> evalExpression environment e) |> List.map (fun (result, _) -> result) |> ListExpr, environment)
 and evalMath op (args: Expression list) (environment: Environment) =
-    let evaluated = evalList args environment
-    match evaluated with
-    | (ListExpr list, updatedEnv) when List.length list >= 2 -> (mathOpList list op, updatedEnv)
+    match args with
+    | _ when List.length args >= 2 -> (mathOpList args op, environment)
     | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
 and evalCompare op (args: Expression list) (env: Environment) =
-    let evaluated = evalList args env
-    match evaluated with
-    | (ListExpr([expr1; expr2;]), _) ->
+    match args with
+    | [expr1; expr2;] ->
         if op (coerceFloat expr1) (coerceFloat expr2) then
             SymbolExpr "T", env
         else
