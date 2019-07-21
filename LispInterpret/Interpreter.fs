@@ -128,11 +128,14 @@ and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) 
     (NilExpr, addOrUpdateBinding newEnv symbol value)
 and evalList (list: Expression list) (environment: Environment) =
     (list |> List.map (fun (e: Expression) -> evalExpression environment e) |> List.map (fun (result, _) -> result) |> ListExpr, environment)
-and evalMath op (args: Expression list) (environment: Environment) =
+
+
+let evalMath op (args: Expression list) (environment: Environment) =
     match args with
     | _ when List.length args >= 2 -> (mathOpList args op, environment)
     | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
-and evalCompare op (args: Expression list) (env: Environment) =
+
+let evalCompare op (args: Expression list) (env: Environment) =
     match args with
     | [expr1; expr2;] ->
         if op (coerceFloat expr1) (coerceFloat expr2) then
