@@ -97,7 +97,7 @@ and evalInvoke (name: string) (parameters: Expression list) (environment: Enviro
     | _ -> 
         match retrieveIntrinsic environment name with
         | IntrinsicFunction as func ->
-            let result, _ = func (mapEval environment parameters) environment
+            let result = func (mapEval environment parameters) environment
             result
         | _ -> ErrorExpr("Is not a function")
         
@@ -131,24 +131,24 @@ and evalList (list: Expression list) (environment: Environment) =
 
 let evalMath op (args: Expression list) (environment: Environment) =
     match args with
-    | _ when List.length args >= 2 -> (mathOpList args op, environment)
-    | _ -> (ErrorExpr "At least 2 numeric arguments required", environment)
+    | _ when List.length args >= 2 -> mathOpList args op
+    | _ -> ErrorExpr "At least 2 numeric arguments required"
 
 let evalCompare op (args: Expression list) (env: Environment) =
     match args with
     | [expr1; expr2;] ->
         if op (coerceFloat expr1) (coerceFloat expr2) then
-            SymbolExpr "T", env
+            SymbolExpr "T"
         else
-            NilExpr, env
+            NilExpr
     | _ -> failwith "Exactly 2 numeric arguments required"
 
 let cons args env =
     match args with
-    | [a; ListExpr(b)] -> ListExpr([a] @ b), env
-    | [a; NilExpr] -> ListExpr([a]), env
-    | [a; b] -> ListExpr [a; b], env
-    | _ -> ErrorExpr("Exactly two arguments expected"), env
+    | [a; ListExpr(b)] -> ListExpr([a] @ b)
+    | [a; NilExpr] -> ListExpr([a])
+    | [a; b] -> ListExpr [a; b]
+    | _ -> ErrorExpr("Exactly two arguments expected")
 
 let createGlobalEnv () =
     {
@@ -164,7 +164,7 @@ let createGlobalEnv () =
             (">=", evalCompare (>=))
             ("<=", evalCompare (<=))
             ("=", evalCompare (=))
-            ("list", (fun args env -> ListExpr(args), env))
+            ("list", (fun args env -> ListExpr(args)))
             ("cons", cons)
         ] |> Map.ofList)
     }

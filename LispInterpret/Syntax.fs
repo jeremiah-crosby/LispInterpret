@@ -32,4 +32,4 @@ and Environment = {
     Variables: Map<string, Expression ref> ref
     Intrinsics: Map<string, IntrinsicFunction> ref
 }
-and IntrinsicFunction = Expression list -> Environment -> Expression * Environment
+and IntrinsicFunction = Expression list -> Environment -> Expression
