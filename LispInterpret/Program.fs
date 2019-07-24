@@ -16,9 +16,9 @@ let readExpression () =
 let rec repl env =
     try
         printf ">> "
-        let (output, updatedEnv) = readExpression () |> lex |> parse |> evalExpressions env
-        printExpression (output, updatedEnv) |> System.Console.Out.WriteLine
-        repl updatedEnv
+        let output = readExpression () |> lex |> parse |> evalExpressions env
+        printExpression (output, env) |> System.Console.Out.WriteLine
+        repl env
     with ex ->
         printf "Error: %s" ex.Message
         repl env

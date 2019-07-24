@@ -25,4 +25,11 @@ and FunctionData = {
     Name: string
     Arguments: FunctionArgument list
     Body: Expression list
+    Environment: Environment
 }
+and Environment = {
+    ParentEnv: Option<Environment>
+    Variables: Map<string, Expression ref> ref
+    Intrinsics: Map<string, IntrinsicFunction> ref
+}
+and IntrinsicFunction = Expression list -> Environment -> Expression * Environment

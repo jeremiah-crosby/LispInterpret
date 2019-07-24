@@ -2,29 +2,21 @@
 
 open Syntax
 
-type Environment = {
-    ParentEnv: Option<Environment>
-    Variables: Map<string, Expression>
-    Intrinsics: Map<string, IntrinsicFunction>
-}
-and IntrinsicFunction = Expression list -> Environment -> Expression * Environment
-
-
 exception EvaluationError of string
 
 let addOrUpdateBinding (environment: Environment) (symbol: string) (value: Expression) =
-    {environment with Variables = Map.add symbol value environment.Variables}
+    environment.Variables := environment.Variables.Value.Add(symbol, ref (value))
 
 let rec retrieveBinding (environment: Environment) (symbol: string) =
-    match Map.tryFind symbol environment.Variables with
+    match Map.tryFind symbol environment.Variables.Value with
     | None ->
         match environment.ParentEnv with
         | None -> ErrorExpr "Variable not found"
         | Some(parentEnv) -> retrieveBinding parentEnv symbol
-    | Some(binding) -> binding
+    | Some(binding) -> binding.Value
 
 let rec retrieveIntrinsic (environment: Environment) (symbol: string) =
-    match Map.tryFind symbol environment.Intrinsics with
+    match Map.tryFind symbol environment.Intrinsics.Value with
     | None ->
         match environment.ParentEnv with
         | None -> failwith "Variable not found"
@@ -48,66 +40,66 @@ let mathOpList list op =
 
 let rec evalExpression (environment: Environment) (expr: Expression)  =
     match expr with
-    | ErrorExpr msg -> (ErrorExpr msg, environment)
-    | IntExpr(n) -> (IntExpr n, environment)
-    | FloatExpr(d) -> (FloatExpr d, environment)
-    | StringExpr(s) -> (StringExpr s, environment)
-    | SymbolExpr "nil" -> (NilExpr, environment)
-    | SymbolExpr(s) -> (retrieveBinding environment s, environment)
+    | ErrorExpr msg -> ErrorExpr msg
+    | IntExpr(n) -> IntExpr n
+    | FloatExpr(d) -> FloatExpr d
+    | StringExpr(s) -> StringExpr s
+    | SymbolExpr "nil" -> NilExpr
+    | SymbolExpr(s) -> retrieveBinding environment s
     | ListExpr(SymbolExpr "defun" :: SymbolExpr name :: ListExpr argList :: body) -> evalDefun name argList body environment
     | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
-    | ListExpr([SymbolExpr "quote"; _ as expr]) -> (expr, environment)
+    | ListExpr([SymbolExpr "quote"; _ as expr]) -> expr
     | ListExpr(SymbolExpr "if" :: test :: rest) -> evalIf environment test rest
     | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
     | ListExpr(list) -> evalList list environment
-    | _ -> (NilExpr, environment)
+    | _ -> NilExpr
 and evalIf (environment: Environment) (test: Expression) (body: Expression list) =
     let len = List.length body
     if len < 1 then
-        ErrorExpr "At least 1 body expression required for if", environment
+        ErrorExpr "At least 1 body expression required for if"
     else if len > 2 then
-        ErrorExpr "Too many body expressions for if, expecting 1 or 2", environment
+        ErrorExpr "Too many body expressions for if, expecting 1 or 2"
     else
         match evalExpression environment test with
-        | (NilExpr, _) | (ListExpr([]), _) ->
+        | NilExpr | ListExpr([]) ->
             if List.length body = 1 then
-                NilExpr, environment
+                NilExpr
             else
                 body |> List.item 1 |> evalExpression environment
         | _ -> body |> List.head |> evalExpression environment
 and evalExpressions (environment: Environment) (expressions: Expression list) = 
-    let evaluator (_: Expression, env: Environment) (expr: Expression) =
-        let result = evalExpression env expr
+    let evaluator (_: Expression) (expr: Expression) =
+        let result = evalExpression environment expr
         match result with
-        | (ErrorExpr(msg), _) ->  raise (EvaluationError(msg))
+        | ErrorExpr(msg) ->  raise (EvaluationError(msg))
         | _ -> result
     try
-        List.fold evaluator (NilExpr, environment) expressions
+        List.fold evaluator NilExpr expressions
     with
-        | EvaluationError(msg) -> (ErrorExpr(msg), environment)
+        | EvaluationError(msg) -> ErrorExpr(msg)
 and mapEval (env: Environment) (expressions: Expression list) =
-    List.map (fun exp -> let (e, _) = evalExpression env exp
-                         e) expressions
+    List.map (fun exp -> evalExpression env exp) expressions
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: FunctionArgument list) =
         List.map (fun (a: FunctionArgument) -> a.Name) args
     match retrieveBinding environment name with
-    | FunctionExpr({Name=name; Arguments=args; Body=body}) ->
+    | FunctionExpr({Name=name; Arguments=args; Body=body; Environment=storedEnv}) ->
         let funcEnvironment = {
-            Variables = parameters |> mapEval environment
+            Variables = ref (parameters |> mapEval environment
+                                   |> List.map ref
                                    |> List.zip (getArgNames args)
-                                   |> Map.ofList;
-            ParentEnv = Some(environment);
-            Intrinsics = Map.empty
+                                   |> Map.ofList);
+            ParentEnv = Some(storedEnv);
+            Intrinsics = ref (Map.empty)
         }
-        let result, _ = evalExpressions funcEnvironment body
-        result, environment
+        let result = evalExpressions funcEnvironment body
+        result
     | _ -> 
         match retrieveIntrinsic environment name with
         | IntrinsicFunction as func ->
             let result, _ = func (mapEval environment parameters) environment
-            result, environment
-        | _ -> (ErrorExpr("Is not a function"), environment)
+            result
+        | _ -> ErrorExpr("Is not a function")
         
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
@@ -119,15 +111,22 @@ and evalDefun (name: string) (argList: Expression list) (body: Expression list) 
                                     | _ -> raise (EvaluationError("Arguments to defun must be symbols")))
                                 argList
             Body = body
+            Environment = {
+                Variables = ref (Map.empty);
+                ParentEnv = Some(environment);
+                Intrinsics = ref (Map.empty)
+            }
         })
-        (result, addOrUpdateBinding environment name result )
+        addOrUpdateBinding environment name result |> ignore
+        result
     with
-        | EvaluationError(msg) -> (ErrorExpr(msg), environment)
+        | EvaluationError(msg) -> ErrorExpr(msg)
 and evalSet (symbol: string) (valueExpr: Expression) (environment: Environment) =
-    let (value, newEnv) = evalExpression environment valueExpr
-    (NilExpr, addOrUpdateBinding newEnv symbol value)
+    let value = evalExpression environment valueExpr
+    addOrUpdateBinding environment symbol value |> ignore
+    NilExpr
 and evalList (list: Expression list) (environment: Environment) =
-    (list |> List.map (fun (e: Expression) -> evalExpression environment e) |> List.map (fun (result, _) -> result) |> ListExpr, environment)
+    list |> List.map (fun (e: Expression) -> evalExpression environment e) |> ListExpr
 
 
 let evalMath op (args: Expression list) (environment: Environment) =
@@ -153,9 +152,9 @@ let cons args env =
 
 let createGlobalEnv () =
     {
-        Variables = Map.empty;
+        Variables = ref (Map.empty);
         ParentEnv = None;
-        Intrinsics = [
+        Intrinsics = ref ([
             ("+", evalMath (+))
             ("-", evalMath (-))
             ("/", evalMath (/))
@@ -167,7 +166,7 @@ let createGlobalEnv () =
             ("=", evalCompare (=))
             ("list", (fun args env -> ListExpr(args), env))
             ("cons", cons)
-        ] |> Map.ofList
+        ] |> Map.ofList)
     }
 
 let rec printExpression = function
