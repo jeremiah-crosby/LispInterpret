@@ -150,6 +150,12 @@ let cons args env =
     | [a; b] -> ListExpr [a; b]
     | _ -> ErrorExpr("Exactly two arguments expected")
 
+let car args env =
+    match args with
+    | [ListExpr []] -> NilExpr
+    | [ListExpr(first::_)] -> first
+    | _ -> ErrorExpr("Invalid arguments")
+
 let createGlobalEnv () =
     {
         Variables = ref (Map.empty);
@@ -166,6 +172,7 @@ let createGlobalEnv () =
             ("=", evalCompare (=))
             ("list", (fun args env -> ListExpr(args)))
             ("cons", cons)
+            ("car", car)
         ] |> Map.ofList)
     }
 

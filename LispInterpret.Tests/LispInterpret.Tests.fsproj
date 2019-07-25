@@ -23,6 +23,7 @@
     <Compile Include="QuoteTests.fs" />
     <Compile Include="IfTests.fs" />
     <Compile Include="ConsTests.fs" />
+    <Compile Include="CarTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
