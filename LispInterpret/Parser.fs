@@ -19,9 +19,11 @@ let rec private parseExpression (state: ParseState): ParseState =
         let list = parseList({state with Remaining = rest})
         match list.Remaining with
         | RightParenthesis :: remaining -> {list with Remaining = remaining}
-        | [] -> error "Expected ')'"
+        | _ -> error "Expected ')'"
     | Number(Some(intNum), None) :: rest -> {Expressions = state.Expressions @ [IntExpr(intNum)]; Remaining = rest}
     | Number(None, Some(floatNum)) :: rest -> {Expressions = state.Expressions @ [FloatExpr(floatNum)]; Remaining = rest}
+    | Number(Some _, Some _):: _ -> error "Number cannot be both float and int"
+    | Number(None, None) :: _ -> error "Number must be an int or float"
     | LiteralString s :: rest -> {Expressions = state.Expressions @ [StringExpr s]; Remaining = rest}
     | Symbol(name) :: rest -> {Expressions = state.Expressions @ [SymbolExpr name]; Remaining = rest}
 and private parseList (state: ParseState) =

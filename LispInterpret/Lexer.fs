@@ -23,8 +23,8 @@ and lexNumber (chars: char list, number: string) =
                 let intNum = System.Int32.Parse(number)
                 Number (Some(intNum), None) :: lexChars rest
               with
-              | :? System.Exception -> let floatNum = System.Double.Parse(number)
-                                       Number(None, Some(floatNum)) :: lexChars rest
+              | ex -> let floatNum = System.Double.Parse(number)
+                      Number(None, Some(floatNum)) :: lexChars rest
 and lexSymbol (chars: char list, name: string) =
     match chars with
     | c :: rest when not (System.Char.IsWhiteSpace c) && c <> '(' && c <> ')' -> lexSymbol(rest, name + c.ToString())

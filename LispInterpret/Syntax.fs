@@ -40,6 +40,18 @@ type Expression =
             | NilExpr, NilExpr -> true
             | _ -> false
         | _ -> false
+    override this.GetHashCode() =
+        let hash = 87539
+        match this with
+        | IntExpr i -> hash * 21089 + i.GetHashCode()
+        | FloatExpr f -> hash * 21089 + f.GetHashCode()
+        | SymbolExpr s -> hash * 21089 + s.GetHashCode()
+        | ErrorExpr e -> hash * 21089 + e.GetHashCode()
+        | ListExpr l -> hash * 21089 + l.GetHashCode()
+        | StringExpr s -> hash * 21089 + s.GetHashCode()
+        | FunctionExpr f -> (hash * 21089 + f.Arguments.GetHashCode()) * (21089 + f.Body.GetHashCode()) * (21089 + f.Name.GetHashCode())
+        | BoolExpr b -> hash * 21089 + b.GetHashCode()
+        | NilExpr -> hash * 21089
 and FunctionData = {
     Name: string
     Arguments: FunctionArgument list

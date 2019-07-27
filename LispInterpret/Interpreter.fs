@@ -35,6 +35,7 @@ let mathOpList list op =
         match mathResult with
         | r when anyFloat = false -> IntExpr (int r)
         | r when anyFloat = true -> FloatExpr r
+        | _ -> failwith "Not int or float"
     with
     | :? EvaluationError -> ErrorExpr("All arguments must be numeric")
 
@@ -95,11 +96,8 @@ and evalInvoke (name: string) (parameters: Expression list) (environment: Enviro
         let result = evalExpressions funcEnvironment body
         result
     | _ -> 
-        match retrieveIntrinsic environment name with
-        | IntrinsicFunction as func ->
-            let result = func (mapEval environment parameters) environment
-            result
-        | _ -> ErrorExpr("Is not a function")
+        let func = retrieveIntrinsic environment name
+        func (mapEval environment parameters) environment
         
 and evalDefun (name: string) (argList: Expression list) (body: Expression list) (environment: Environment) =
     try
@@ -187,3 +185,5 @@ let rec printExpression = function
 | (FunctionExpr(_), _) -> "Function"
 | (NilExpr, _) -> "nil"
 | (ErrorExpr(e), _) -> String.concat " " ["Error"; e]
+| (BoolExpr false, _) -> "false"
+| (BoolExpr true, _) -> "true"
