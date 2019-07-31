@@ -154,6 +154,12 @@ let car args env =
     | [ListExpr(first::_)] -> first
     | _ -> ErrorExpr("Invalid arguments")
 
+let cdr args env =
+    match args with
+    | [ListExpr []]-> ListExpr []
+    | [ListExpr(_::rest)] -> ListExpr rest
+    | _ -> ErrorExpr("Invalid arguments")
+
 let createGlobalEnv () =
     {
         Variables = ref (Map.empty);
@@ -171,6 +177,7 @@ let createGlobalEnv () =
             ("list", (fun args env -> ListExpr(args)))
             ("cons", cons)
             ("car", car)
+            ("cdr", cdr)
         ] |> Map.ofList)
     }
 

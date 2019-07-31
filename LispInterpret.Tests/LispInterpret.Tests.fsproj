@@ -24,6 +24,7 @@
     <Compile Include="IfTests.fs" />
     <Compile Include="ConsTests.fs" />
     <Compile Include="CarTests.fs" />
+    <Compile Include="CdrTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
