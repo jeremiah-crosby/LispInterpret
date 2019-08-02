@@ -123,3 +123,13 @@ type InterpreterTests () =
     member this.``(list 1 2 3) = (1 2 3)`` () =
         let result = TestHelpers.evalString @"(list 1 2 3)"
         result |> should equal (ListExpr([IntExpr(1); IntExpr(2); IntExpr(3)]))
+
+    [<Test>]
+    member this.``setting variable value in closure should remember value between invokes`` () =
+        let result = TestHelpers.evalString @"(defun make-counter ()
+                                                 (set c 0)
+                                                 (lambda () (set c (+ c 1)) c))
+                                              (set counter (make-counter))
+                                              (counter)
+                                              (counter)"
+        result |> should equal (IntExpr 2)

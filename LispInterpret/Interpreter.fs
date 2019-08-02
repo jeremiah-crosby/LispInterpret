@@ -4,16 +4,31 @@ open Syntax
 
 exception EvaluationError of string
 
-let addOrUpdateBinding (environment: Environment) (symbol: string) (value: Expression) =
-    environment.Variables := environment.Variables.Value.Add(symbol, ref (value))
-
-let rec retrieveBinding (environment: Environment) (symbol: string) =
+let rec retrieveBindingValue (environment: Environment) (symbol: string) =
     match Map.tryFind symbol environment.Variables.Value with
     | None ->
         match environment.ParentEnv with
         | None -> ErrorExpr "Variable not found"
-        | Some(parentEnv) -> retrieveBinding parentEnv symbol
+        | Some(parentEnv) -> retrieveBindingValue parentEnv symbol
     | Some(binding) -> binding.Value
+
+let rec retrieveBindingRef (environment: Environment) (symbol: string) =
+    match Map.tryFind symbol environment.Variables.Value with
+    | None ->
+        match environment.ParentEnv with
+        | None -> None
+        | Some(parentEnv) -> retrieveBindingRef parentEnv symbol
+    | _ as binding -> binding
+
+let addOrUpdateBinding (environment: Environment) (symbol: string) (value: Expression) =
+    let existingBinding = retrieveBindingRef environment symbol
+    match existingBinding with
+    | None _ ->
+        environment.Variables := environment.Variables.Value.Add(symbol, ref (value))
+        NilExpr
+    | Some(binding) ->
+        binding := value
+        NilExpr
 
 let rec retrieveIntrinsic (environment: Environment) (symbol: string) =
     match Map.tryFind symbol environment.Intrinsics.Value with
@@ -46,11 +61,12 @@ let rec evalExpression (environment: Environment) (expr: Expression)  =
     | FloatExpr(d) -> FloatExpr d
     | StringExpr(s) -> StringExpr s
     | SymbolExpr "nil" -> NilExpr
-    | SymbolExpr(s) -> retrieveBinding environment s
+    | SymbolExpr(s) -> retrieveBindingValue environment s
     | ListExpr(SymbolExpr "defun" :: SymbolExpr name :: ListExpr argList :: body) -> evalDefun name argList body environment
     | ListExpr([SymbolExpr "set"; SymbolExpr setSymbol; value]) -> evalSet setSymbol value environment
     | ListExpr([SymbolExpr "quote"; _ as expr]) -> expr
     | ListExpr(SymbolExpr "if" :: test :: rest) -> evalIf environment test rest
+    | ListExpr(SymbolExpr "lambda" :: ListExpr parameters :: body) -> evalLambda environment parameters body
     | ListExpr(SymbolExpr f :: rest) -> evalInvoke f rest environment
     | ListExpr(list) -> evalList list environment
     | _ -> NilExpr
@@ -83,7 +99,7 @@ and mapEval (env: Environment) (expressions: Expression list) =
 and evalInvoke (name: string) (parameters: Expression list) (environment: Environment) =
     let getArgNames (args: FunctionArgument list) =
         List.map (fun (a: FunctionArgument) -> a.Name) args
-    match retrieveBinding environment name with
+    match retrieveBindingValue environment name with
     | FunctionExpr({Name=name; Arguments=args; Body=body; Environment=storedEnv}) ->
         let funcEnvironment = {
             Variables = ref (parameters |> mapEval environment
@@ -116,6 +132,25 @@ and evalDefun (name: string) (argList: Expression list) (body: Expression list) 
             }
         })
         addOrUpdateBinding environment name result |> ignore
+        result
+    with
+        | EvaluationError(msg) -> ErrorExpr(msg)
+and evalLambda (environment: Environment) (parameters: Expression list) (body: Expression list) =
+    try
+        let result = FunctionExpr({
+            Name = ""
+            Arguments = List.map (fun a ->
+                                    match a with
+                                    | SymbolExpr n -> {Name = n}
+                                    | _ -> raise (EvaluationError("Arguments to defun must be symbols")))
+                                parameters
+            Body = body
+            Environment = {
+                Variables = ref (Map.empty);
+                ParentEnv = Some(environment);
+                Intrinsics = ref (Map.empty)
+            }
+        })
         result
     with
         | EvaluationError(msg) -> ErrorExpr(msg)
