@@ -12,7 +12,7 @@ let escape = function
 | 'n' -> "\n"
 | 't' -> "\t"
 | '"' -> "\""
-| '\\' -> "\""
+| '\\' -> "\\"
 | _ as c -> c.ToString()
 
 let rec private lexChars (chars: char list): Token list =
