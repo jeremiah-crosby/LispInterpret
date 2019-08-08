@@ -213,7 +213,6 @@ let createGlobalEnv () =
             ("cons", cons)
             ("car", car)
             ("cdr", cdr)
-            ("quit", (fun _ _ -> System.Environment.Exit(0); NilExpr))
         ] |> Map.ofList)
     }
 

@@ -1,6 +1,7 @@
 ﻿module Program
 
 open Lexer
+open Syntax
 open Parser
 open Interpreter
 
@@ -25,6 +26,7 @@ let rec repl env =
 
 let [<EntryPoint>] main _ =
     let env = createGlobalEnv ()
+    env.Intrinsics := env.Intrinsics.Value.Add("quit", (fun _ _ -> System.Environment.Exit(0); NilExpr))
     System.Console.WriteLine("Welcome to LispInterpret")
     repl env
     0
