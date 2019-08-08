@@ -14,6 +14,7 @@ let private error (message: string): ParseState =
 let rec private parseExpression (state: ParseState): ParseState =
     match state.Remaining with
     | [] -> state
+    | Error msg :: _ -> error msg
     | RightParenthesis :: _-> error "unmatched ')'"
     | LeftParenthesis :: rest ->
         let list = parseList({state with Remaining = rest})

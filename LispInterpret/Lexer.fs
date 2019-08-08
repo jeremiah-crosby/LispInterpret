@@ -6,6 +6,14 @@ type Token =
     | Symbol of string
     | Number of int option * float option
     | LiteralString of string
+    | Error of string
+
+let escape = function
+| 'n' -> "\n"
+| 't' -> "\t"
+| '"' -> "\""
+| '\\' -> "\""
+| _ as c -> c.ToString()
 
 let rec private lexChars (chars: char list): Token list =
     match chars with
@@ -32,8 +40,9 @@ and lexSymbol (chars: char list, name: string) =
 and lexString (chars: char list, str: string) =
     match chars with
     | '"' :: rest -> LiteralString(str) :: lexChars rest
+    | '\\' :: c :: rest -> lexString(rest, str + (escape c))
     | c :: rest -> lexString(rest, str + c.ToString())
-    | [] -> [LiteralString(str)]
+    | [] -> [Error "Incomplete string"]
     
 
 let lex (source: string): Token list =
