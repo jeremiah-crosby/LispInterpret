@@ -5,10 +5,10 @@ open Syntax
 open Parser
 open Interpreter
 
-let readExpression () =
+let readExpression (reader: System.IO.TextReader) =
     let mutable input = ""
     while (not (input.EndsWith(';'))) do
-        input <- String.concat "" [input; System.Console.ReadLine()]
+        input <- String.concat "" [input; reader.ReadLine()]
     if (String.length input) = 0 then
         input
     else
@@ -17,7 +17,7 @@ let readExpression () =
 let rec repl env =
     try
         printf "\n>> "
-        let output = readExpression () |> lex |> parse |> evalExpressions env
+        let output = readExpression (System.Console.In) |> lex |> parse |> evalExpressions env
         printExpression (output, env) |> System.Console.Out.WriteLine
         repl env
     with ex ->
