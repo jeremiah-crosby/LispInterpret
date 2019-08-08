@@ -15,12 +15,12 @@ let readExpression () =
 
 let rec repl env =
     try
-        printf ">> "
+        printf "\n>> "
         let output = readExpression () |> lex |> parse |> evalExpressions env
         printExpression (output, env) |> System.Console.Out.WriteLine
         repl env
     with ex ->
-        printf "Error: %s" ex.Message
+        printf "Error: %s\n" ex.Message
         repl env
 
 let [<EntryPoint>] main _ =

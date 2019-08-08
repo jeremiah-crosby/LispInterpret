@@ -226,6 +226,6 @@ let rec printExpression = function
 | (FloatExpr(f), _) -> f.ToString()
 | (FunctionExpr(_), _) -> "Function"
 | (NilExpr, _) -> "nil"
-| (ErrorExpr(e), _) -> String.concat " " ["Error"; e]
+| (ErrorExpr(e), _) -> String.concat " " ["Error:"; e]
 | (BoolExpr false, _) -> "false"
 | (BoolExpr true, _) -> "true"
